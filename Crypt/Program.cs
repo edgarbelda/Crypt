@@ -17,7 +17,7 @@ namespace Crypt
 
         private const string Pin = "1234";
         private const string Pass = "password";
-        private static readonly string PassPhrase =Encryption.Encrypt(string.Concat(Pin,Pass), string.Concat(Pin, Pass));
+        private static readonly string PassPhrase =string.Concat(Pin,Pass);
         private const int SleepTime = 5000;
         #endregion
         static void Main(string[] args)
