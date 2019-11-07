@@ -2,10 +2,13 @@
 Fast line command program to encrypt\decrypt files using algorithm [(AES 256-bit)](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)
 
 ## Description
-This tool is just for a personal use to fast encrypt an decrypt files, especially if you want to store on a cloud service. 
+This tool is just for a personal use to fast encrypt and decrypt files, especially if you want to store on a cloud service. It works with any type of file (txt, jpg, pdf, ...)
 Default Pin: 1234 Password: password
 
+Security time to check values 5 seconds, to avoid force brute attacks. 
 I'm using the [C# implementation]// Code extracted from https://github.com/nopara73/DotNetEssentials/blob/master/DotNetEssentials/Crypto/StringCipher.cs) of a DotNetEssentials library.
+
+![Gif manual](https://github.com/edgarbelda/Crypt/blob/master/Manual/iWjmcabiUp.gif "Gif")
 
 ## HOW TO USE
 1. Clone the repository or download
