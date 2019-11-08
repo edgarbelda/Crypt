@@ -18,7 +18,7 @@ namespace Crypt
 
         private const string Pin = "1234";
         private const string Pass = "password";
-        private static readonly string PassPhrase =string.Concat(Pin,Pass);
+        private static readonly string PassPhrase = Hash.GetHashString(string.Concat(Pin,Pass));
         private const int SleepTime = 5000;
         #endregion
         static void Main(string[] args)
@@ -91,7 +91,7 @@ namespace Crypt
         {
             Console.WriteLine("Path: ");
             var inputLine = Console.ReadLine() ?? throw new InvalidOperationException();
-            _path = string.Join("", inputLine);
+            _path = string.Join("", inputLine).Replace('"',' ').Trim();
             ProcessPath();
         }
 
