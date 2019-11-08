@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using Crypt.Models;
 
 namespace Crypt
@@ -34,18 +35,26 @@ namespace Crypt
 
                 using (var reader = new StreamReader(_path))
                 {
-                    var value = Encryption.Decrypt(reader.ReadToEnd(), PassPhrase);
-                    var sw = new StreamWriter(Path.Combine(_directoryName,
-                        string.Concat(_fileName.Replace("_", ""), _extension)));
-                    sw.Write(value);
-                    sw.Close();
-                    reader.Close();
-                    File.Delete(_path);
+                    try
+                    {
+                        var value = Encryption.Decrypt(reader.ReadToEnd(), PassPhrase);
+                        var combine = Path.Combine(_directoryName, string.Concat(_fileName.Replace("_", ""), _extension));
+                        var fs = new FileStream(combine, FileMode.CreateNew);
+                        var sw = new StreamWriter(fs, Encoding.GetEncoding("iso-8859-1"));
+                        sw.Write(value);
+                        sw.Close();
+                        reader.Close();
+                        File.Delete(_path);
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("Error decrypting");
+                    }
                 }
             }
             else
             {
-                using (var reader = new StreamReader(_path))
+                using (var reader = new StreamReader(_path, Encoding.GetEncoding("iso-8859-1")))
                 {
                     var sr = reader.ReadToEnd();
                     var sw = new StreamWriter(Path.Combine(_directoryName, string.Concat(_fileName,"_",_extension)));
