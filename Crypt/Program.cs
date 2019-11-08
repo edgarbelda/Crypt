@@ -7,7 +7,6 @@ namespace Crypt
 {
     class Program
     {
-
         #region Definitions
 
         private static string _path;
@@ -15,7 +14,7 @@ namespace Crypt
         private static string _directoryName;
         private static string _extension;
         private static bool _encrypt;
-
+        
         private const string Pin = "1234";
         private const string Pass = "password";
         private static readonly string PassPhrase = Hash.GetHashString(string.Concat(Pin,Pass));
@@ -37,20 +36,24 @@ namespace Crypt
         {
             if (_encrypt)
             {
-                if (!AskCode("PIN: ", Pin) || !AskCode("PASS: ", Pass)) return;
+                var pin = !AskCode("PIN: ", Pin);
+                var pass = !AskCode("PASS: ", Pass);
+                if (pin || pass) return;
 
                 using (var reader = new StreamReader(_path))
                 {
                     try
                     {
+                        var currentDirectory = Directory.GetCurrentDirectory(); 
                         var value = Encryption.Decrypt(reader.ReadToEnd(), PassPhrase);
-                        var combine = Path.Combine(_directoryName, string.Concat(_fileName.Replace("_", ""), _extension));
+                        var combine = Path.Combine(currentDirectory, string.Concat(_fileName.Replace("_", ""), _extension));
                         var fs = new FileStream(combine, FileMode.CreateNew);
                         var sw = new StreamWriter(fs, Encoding.GetEncoding("iso-8859-1"));
                         sw.Write(value);
                         sw.Close();
                         reader.Close();
-                        File.Delete(_path);
+                        if(_directoryName.Equals(currentDirectory))
+                            File.Delete(_path);
                     }
                     catch (Exception)
                     {
@@ -84,7 +87,7 @@ namespace Crypt
 
         private static void ProcessInput(string[] args)
         {
-            _path = string.Join("",args);
+            _path = string.Join(" ",args);
             ProcessPath();
         }
         private static void AskInput()
