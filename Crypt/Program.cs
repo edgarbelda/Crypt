@@ -23,7 +23,13 @@ namespace Crypt
         #endregion
         static void Main(string[] args)
         {
-            ProcessInput(args);
+            PrintCredits();
+
+            if(args.Length!=0)
+                ProcessInput(args);
+            else
+                AskInput();
+            
             EncryptDecrypt();
         }
 
@@ -79,10 +85,30 @@ namespace Crypt
         private static void ProcessInput(string[] args)
         {
             _path = string.Join("",args);
+            ProcessPath();
+        }
+        private static void AskInput()
+        {
+            Console.WriteLine("Path: ");
+            var inputLine = Console.ReadLine() ?? throw new InvalidOperationException();
+            _path = string.Join("", inputLine);
+            ProcessPath();
+        }
+
+        private static void ProcessPath()
+        {
             _fileName = Path.GetFileNameWithoutExtension(_path);
             _directoryName = Path.GetDirectoryName(_path);
             _extension = Path.GetExtension(_path);
-            _encrypt = _fileName.EndsWith("_");
+            if (_fileName != null) _encrypt = _fileName.EndsWith("_");
         }
+        private static void PrintCredits()
+        {
+            Console.WriteLine("Crypt - Fast line command program to encrypt\\decrypt files using algorithm(AES 256 - bit)");
+            Console.WriteLine("https://github.com/edgarbelda/Crypt");
+            Console.WriteLine();
+
+        }
+
     }
 }
