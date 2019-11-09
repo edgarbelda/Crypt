@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Crypt.Models;
 using QRCoder;
+using EASendMail;
+using SmtpClient = EASendMail.SmtpClient;
 
 namespace Crypt
 {
@@ -21,6 +24,7 @@ namespace Crypt
         private static readonly string PassPhrase = Hash.GetHashString(string.Concat(Pin, Pass));
         private const int SleepTime = 1000;
         private const bool TwoFactors = true;
+        private const string Email = "put your email";
         #endregion
 
         #region Constructor
@@ -63,8 +67,20 @@ namespace Crypt
                 Environment.Exit(0);
             }
 
-            ShowTwoFactorQr(Secret32());
 
+            var code = RandomString(8);
+            SendEmail(code);
+
+            Console.WriteLine("Enter email code:");
+            var input = Console.ReadLine();
+
+            if (!code.Equals(input))
+            {
+                WrongPass("email code invalid.");
+                Environment.Exit(0);
+            }
+
+            ShowTwoFactorQr(Secret32());
             Console.WriteLine("Enter code to confirm: ");
             CheckTwoFactors();
         }
@@ -206,6 +222,43 @@ namespace Crypt
             var secret32 = secret.EncodeAsBase32String(false);
             return secret32;
         }
+
+        private static void SendEmail(string code)
+        {
+            try
+            {
+                var oMail = new SmtpMail("TryIt");
+
+                oMail.From = "crypt@crypt.com";
+                oMail.To = Email;
+                oMail.Subject = "Code for Two factors";
+                oMail.TextBody = "The two factors code is: " + code;
+                var oServer = new SmtpServer("");
+
+                Console.WriteLine("start to send email directly ...");
+
+                var oSmtp = new SmtpClient();
+                oSmtp.SendMail(oServer, oMail);
+
+                Console.WriteLine("email was sent successfully! (Check SPAM folder!)");
+            }
+            catch (Exception ep)
+            {
+                Console.WriteLine("failed to send email with the following error:");
+                Console.WriteLine(ep.Message);
+            }
+
+
+        }
+
+        private static string RandomString(int length)
+        {
+            var random = new Random();
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
         #endregion
     }
 }
