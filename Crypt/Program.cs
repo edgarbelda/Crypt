@@ -97,6 +97,9 @@ namespace Crypt
             ShowTwoFactorQr(Secret32());
             Console.WriteLine("Enter code to confirm: ");
             CheckTwoFactors();
+            Console.WriteLine("Press button to exit...");
+            Console.ReadLine();
+            Environment.Exit(1);
         }
 
 
@@ -232,6 +235,7 @@ namespace Crypt
             var qrCode = new QRCode(qrCodeData);
             var qrCodeImage = qrCode.GetGraphic(1, Color.Black, Color.White, null);
             ConsoleWriteImage(qrCodeImage);
+            Console.WriteLine("Code (for manually entrance): " + secret32);
         }
 
         private static string Secret32()
