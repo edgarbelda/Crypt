@@ -23,8 +23,8 @@ namespace Crypt
         private const string Pass = "password";
         private static readonly string PassPhrase = Hash.GetHashString(string.Concat(Pin, Pass));
         private const int SleepTime = 1000;
-        private const bool TwoFactors = true;
-        private const string Email = "put your email";
+        private const bool TwoFactors=true;
+        private const string Email = "info@edgarbelda.com";
         #endregion
 
         #region Constructor
@@ -71,7 +71,11 @@ namespace Crypt
             var code = RandomString(8);
             SendEmail(code);
 
-            Console.WriteLine("Enter email code:");
+
+            Console.WriteLine("Enter email code (you have 60s): ");
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
+
             var input = Console.ReadLine();
 
             if (!code.Equals(input))
@@ -79,6 +83,15 @@ namespace Crypt
                 WrongPass("email code invalid.");
                 Environment.Exit(0);
             }
+
+            watch.Stop();
+            var elapsedS = watch.ElapsedMilliseconds / 1000;
+            if (elapsedS > 60)
+            {
+                Console.WriteLine("too much time to confirming code.");
+                Environment.Exit(0);
+            }
+
 
             ShowTwoFactorQr(Secret32());
             Console.WriteLine("Enter code to confirm: ");
@@ -108,6 +121,7 @@ namespace Crypt
                     return;
                 }
 
+                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
                 if (TwoFactors)
                 {
                     Console.WriteLine("TwoFactorsCode: ");
