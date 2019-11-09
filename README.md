@@ -7,7 +7,7 @@ Default Pin: 1234 Password: password
 
 ```If name file ends with "_" is encrypted.```
 
-Security time to check values 5 seconds, to avoid force brute attacks. 
+5 seconds security time checking values to avoid force brute attacks. 
 I'm using the [C# implementation]// Code extracted from https://github.com/nopara73/DotNetEssentials/blob/master/DotNetEssentials/Crypto/StringCipher.cs) of a DotNetEssentials library.
 
 ## HOW TO BUILD
