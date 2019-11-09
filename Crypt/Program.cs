@@ -61,9 +61,10 @@ namespace Crypt
         {
             var pin = !AskCode("PIN: ", Pin);
             var pass = !AskCode("PASS: ", Pass);
-            if (pin || pass)
+            var email = !AskCode("EMAIL: ", Email);
+            if (pin || pass|| email)
             {
-                WrongPass("PIN-PASS combination invalid.");
+                WrongPass("PIN-PASS-EMAIL combination invalid.");
                 Environment.Exit(0);
             }
 
