@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Text;
 using Crypt.Models;
+using QRCoder;
 
 namespace Crypt
 {
@@ -17,7 +19,8 @@ namespace Crypt
         private const string Pin = "1234";
         private const string Pass = "password";
         private static readonly string PassPhrase = Hash.GetHashString(string.Concat(Pin, Pass));
-        private const int SleepTime = 5000;
+        private const int SleepTime = 1000;
+        private const bool TwoFactors = true;
         #endregion
 
         #region Constructor
@@ -42,11 +45,31 @@ namespace Crypt
         }
         private static void AskInput()
         {
-            Console.WriteLine("Path: ");
+            Console.WriteLine("Path or (2fa): ");
             var inputLine = Console.ReadLine() ?? throw new InvalidOperationException();
+            if (inputLine.Equals("2fa"))
+                Configure2Fa();
             _path = string.Join("", inputLine).Replace('"', ' ').Trim();
             ProcessPath();
         }
+
+        private static void Configure2Fa()
+        {
+            var pin = !AskCode("PIN: ", Pin);
+            var pass = !AskCode("PASS: ", Pass);
+            if (pin || pass)
+            {
+                WrongPass("PIN-PASS combination invalid.");
+                Environment.Exit(0);
+            }
+
+            ShowTwoFactorQr(Secret32());
+
+            Console.WriteLine("Enter code to confirm: ");
+            CheckTwoFactors();
+        }
+
+
         private static void ProcessPath()
         {
             _fileName = Path.GetFileNameWithoutExtension(_path);
@@ -59,13 +82,20 @@ namespace Crypt
         {
             if (_encrypt)
             {
+
+
                 var pin = !AskCode("PIN: ", Pin);
                 var pass = !AskCode("PASS: ", Pass);
                 if (pin || pass)
                 {
-                    Console.WriteLine("PIN-PASS combination invalid.");
-                    Console.ReadLine();
+                    WrongPass("PIN-PASS combination invalid.");
                     return;
+                }
+
+                if (TwoFactors)
+                {
+                    Console.WriteLine("TwoFactorsCode: ");
+                    CheckTwoFactors();
                 }
 
                 using (var reader = new StreamReader(_path))
@@ -103,6 +133,25 @@ namespace Crypt
             }
 
         }
+
+        private static void CheckTwoFactors()
+        {
+            var input = Console.ReadLine();
+            var otpSharp = new OtpSharp.Totp(Secret32().ToByteArray());
+            if (otpSharp.ComputeTotp().Equals(input))
+                Console.WriteLine("Two factors code right.");
+            else
+                WrongPass("Two factors code wrong.");
+            Environment.Exit(1);
+
+        }
+
+        private static void WrongPass(string message)
+        {
+            Console.WriteLine(message);
+            Console.ReadLine();
+        }
+
         private static bool AskCode(string message, string code)
         {
             System.Threading.Thread.Sleep(SleepTime);
@@ -116,7 +165,46 @@ namespace Crypt
             Console.WriteLine("Crypt - Fast line command program to encrypt\\decrypt files using algorithm (AES 256 - bit)");
             Console.WriteLine("https://github.com/edgarbelda/Crypt");
             Console.WriteLine();
+            Console.WriteLine("Enter path or press 2fa to configure the 2 authorization factors");
 
+        }
+
+        public static void ConsoleWriteImage(Bitmap bmpSrc)
+        {
+            for (var i = 0; i < bmpSrc.Height; i++)
+            {
+                for (var j = 0; j < bmpSrc.Width; j++)
+                {
+                    var c = bmpSrc.GetPixel(j, i);
+                    const int t = 150;
+                    if (c.R > t | c.G > t | c.B > t)
+                        Console.ForegroundColor = ConsoleColor.White;
+                    else
+                        Console.ForegroundColor = ConsoleColor.Black;
+
+
+                    Console.Write("██");
+                }
+                Console.WriteLine();
+            }
+        }
+
+        public static void ShowTwoFactorQr(string secret32)
+        {
+            Console.Clear();
+            Console.WriteLine("Scan code:");
+            var qrGenerator = new QRCodeGenerator();
+            var qrCodeData = qrGenerator.CreateQrCode(string.Concat("otpauth://totp/Crypt?secret=", string.Concat(secret32, "&algorithm=SHA1&digits=6&period=30")), QRCodeGenerator.ECCLevel.Q);
+            var qrCode = new QRCode(qrCodeData);
+            var qrCodeImage = qrCode.GetGraphic(1, Color.Black, Color.White, null);
+            ConsoleWriteImage(qrCodeImage);
+        }
+
+        private static string Secret32()
+        {
+            var secret = Hash.GetHashString(PassPhrase).Substring(0, 10).ToLower();
+            var secret32 = secret.EncodeAsBase32String(false);
+            return secret32;
         }
         #endregion
     }
