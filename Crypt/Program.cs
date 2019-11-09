@@ -169,9 +169,12 @@ namespace Crypt
             var input = Console.ReadLine();
             var otpSharp = new OtpSharp.Totp(Secret32().ToByteArray());
             if (otpSharp.ComputeTotp().Equals(input))
+            {
                 Console.WriteLine("Two factors code right.");
-            else
-                WrongPass("Two factors code wrong.");
+                return;
+            }
+
+            WrongPass("Two factors code wrong.");
             Environment.Exit(1);
 
         }
