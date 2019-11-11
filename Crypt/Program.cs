@@ -6,6 +6,8 @@ using System.Text;
 using Crypt.Models;
 using QRCoder;
 using EASendMail;
+using Color = System.Drawing.Color;
+using Random = System.Random;
 using SmtpClient = EASendMail.SmtpClient;
 
 namespace Crypt
@@ -23,7 +25,7 @@ namespace Crypt
         private const string Pass = "password";
         private static readonly string PassPhrase = Hash.GetHashString(string.Concat(Pin, Pass));
         private const int SleepTime = 1000;
-        private const bool TwoFactors=true;
+        private const bool TwoFactors = true;
         private const string Email = "info@edgarbelda.com";
         #endregion
 
@@ -62,7 +64,7 @@ namespace Crypt
             var pin = !AskCode("PIN: ", Pin);
             var pass = !AskCode("PASS: ", Pass);
             var email = !AskCode("EMAIL: ", Email);
-            if (pin || pass|| email)
+            if (pin || pass || email)
             {
                 WrongPass("PIN-PASS-EMAIL combination invalid.");
                 Environment.Exit(0);
