@@ -45,6 +45,11 @@ namespace Crypt
             EncryptDecrypt();
         }
 
+
+
+        #endregion
+
+        #region Methods
         private static void CheckConfig()
         {
             try
@@ -62,8 +67,10 @@ namespace Crypt
                     Console.WriteLine("Creating config file");
                     Console.WriteLine("Insert a Pin and press enter: ");
                     var pin = Console.ReadLine();
+                    PrintCredits();
                     Console.WriteLine("Insert a Pass and press enter: ");
                     var pass = Console.ReadLine();
+                    PrintCredits();
                     Console.WriteLine("Insert an email to activate Two factors security (empty if not) and press enter: ");
                     var email = Console.ReadLine();
                     _config = new Config(pin, pass, email);
@@ -77,12 +84,15 @@ namespace Crypt
                             Environment.Exit(0);
                         }
                     }
-                       
+
                     var json = JsonConvert.SerializeObject(_config);
                     var sw = new StreamWriter(FileName);
                     var code = Hash.GetHashString(Environment.UserName + Environment.MachineName);
                     sw.Write(Encryption.Encrypt(json, code));
                     sw.Close();
+                    Console.WriteLine(FileName + " configured.");
+                    Console.WriteLine("Press any key to continue...");
+                    Console.Read();
                 }
 
             }
@@ -93,10 +103,6 @@ namespace Crypt
                 Environment.Exit(1);
             }
         }
-
-        #endregion
-
-        #region Methods
         private static void ProcessInput(string[] args)
         {
             _path = string.Join(" ", args);
@@ -155,7 +161,6 @@ namespace Crypt
             return true;
         }
 
-
         private static void ProcessPath()
         {
             _fileName = Path.GetFileNameWithoutExtension(_path);
@@ -207,6 +212,13 @@ namespace Crypt
             }
             else
             {
+                var pin = !AskCode("PIN: ", _config.Pin);
+                if (pin)
+                {
+                    WrongPass("PIN invalid.");
+                    return;
+                }
+
                 using (var reader = new StreamReader(_path, Encoding.GetEncoding("iso-8859-1")))
                 {
                     var sr = reader.ReadToEnd();
