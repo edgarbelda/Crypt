@@ -73,6 +73,7 @@ namespace Crypt
                     PrintCredits();
                     Console.WriteLine("Insert an email to activate Two factors security (empty if not) and press enter: ");
                     var email = Console.ReadLine();
+                    PrintCredits();
                     _config = new Config(pin, pass, email);
 
                     if (_config.TwoFactors)
@@ -91,8 +92,7 @@ namespace Crypt
                     sw.Write(Encryption.Encrypt(json, code));
                     sw.Close();
                     Console.WriteLine(FileName + " configured.");
-                    Console.WriteLine("Press any key to continue...");
-                    Console.Read();
+
                 }
 
             }
@@ -110,11 +110,12 @@ namespace Crypt
         }
         private static void AskInput()
         {
-            PrintCredits();
+
             Console.WriteLine("Path: ");
             var inputLine = Console.ReadLine() ?? throw new InvalidOperationException();
             _path = string.Join("", inputLine).Replace('"', ' ').Trim();
-            ProcessPath();
+            if(_path!="")
+                ProcessPath();
         }
 
         private static bool Configure2Fa()
