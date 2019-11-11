@@ -6,9 +6,11 @@ using System.Text;
 using Crypt.Models;
 using QRCoder;
 using EASendMail;
+using Newtonsoft.Json;
 using Color = System.Drawing.Color;
 using Random = System.Random;
 using SmtpClient = EASendMail.SmtpClient;
+
 
 namespace Crypt
 {
@@ -21,18 +23,19 @@ namespace Crypt
         private static string _extension;
         private static bool _encrypt;
 
-        private const string Pin = "1234";
-        private const string Pass = "password";
-        private static readonly string PassPhrase = Hash.GetHashString(string.Concat(Pin, Pass));
-        private const int SleepTime = 1000;
-        private const bool TwoFactors = true;
-        private const string Email = "info@edgarbelda.com";
+        private static Config _config;
+        private const string FileName = "config.crypt";
+        
         #endregion
 
         #region Constructor
         public static void Main(string[] args)
         {
             PrintCredits();
+
+            CheckConfig();
+
+
 
             if (args.Length != 0)
                 ProcessInput(args);
@@ -41,6 +44,56 @@ namespace Crypt
 
             EncryptDecrypt();
         }
+
+        private static void CheckConfig()
+        {
+            try
+            {
+                if (File.Exists(FileName))
+                {
+                    string config;
+                    var code = Hash.GetHashString(Environment.UserName + Environment.MachineName);
+                    using (var reader = new StreamReader(FileName))
+                        config = Encryption.Decrypt(reader.ReadToEnd(), code);
+                    _config = JsonConvert.DeserializeObject<Config>(config);
+                }
+                else
+                {
+                    Console.WriteLine("Creating config file");
+                    Console.WriteLine("Insert a Pin and press enter: ");
+                    var pin = Console.ReadLine();
+                    Console.WriteLine("Insert a Pass and press enter: ");
+                    var pass = Console.ReadLine();
+                    Console.WriteLine("Insert an email to activate Two factors security (empty if not) and press enter: ");
+                    var email = Console.ReadLine();
+                    _config = new Config(pin, pass, email);
+
+                    if (_config.TwoFactors)
+                    {
+                        if (!Configure2Fa())
+                        {
+                            Console.WriteLine("Press any key to exit...");
+                            Console.Read();
+                            Environment.Exit(0);
+                        }
+                    }
+                       
+                    var json = JsonConvert.SerializeObject(_config);
+                    var sw = new StreamWriter(FileName);
+                    var code = Hash.GetHashString(Environment.UserName + Environment.MachineName);
+                    sw.Write(Encryption.Encrypt(json, code));
+                    sw.Close();
+                }
+
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error reading config file");
+                Console.WriteLine($"ERROR: {exception.Message}\n\n{exception.StackTrace}");
+                Environment.Exit(1);
+            }
+        }
+
         #endregion
 
         #region Methods
@@ -51,23 +104,23 @@ namespace Crypt
         }
         private static void AskInput()
         {
-            Console.WriteLine("Path or (2fa): ");
+            PrintCredits();
+            Console.WriteLine("Path: ");
             var inputLine = Console.ReadLine() ?? throw new InvalidOperationException();
-            if (inputLine.Equals("2fa"))
-                Configure2Fa();
             _path = string.Join("", inputLine).Replace('"', ' ').Trim();
             ProcessPath();
         }
 
-        private static void Configure2Fa()
+        private static bool Configure2Fa()
         {
-            var pin = !AskCode("PIN: ", Pin);
-            var pass = !AskCode("PASS: ", Pass);
-            var email = !AskCode("EMAIL: ", Email);
+            PrintCredits();
+            var pin = !AskCode("PIN: ", _config.Pin);
+            var pass = !AskCode("PASS: ", _config.Pass);
+            var email = !AskCode("EMAIL: ", _config.Email);
             if (pin || pass || email)
             {
-                WrongPass("PIN-PASS-EMAIL combination invalid.");
-                Environment.Exit(0);
+                WrongPass("PIN-PASS-EMAIL combination invalid, configure again.");
+                return false;
             }
 
 
@@ -83,25 +136,23 @@ namespace Crypt
 
             if (!code.Equals(input))
             {
-                WrongPass("email code invalid.");
-                Environment.Exit(0);
+                WrongPass("email code invalid, configure again.");
+                return false;
             }
 
             watch.Stop();
             var elapsedS = watch.ElapsedMilliseconds / 1000;
             if (elapsedS > 60)
             {
-                Console.WriteLine("too much time to confirming code.");
-                Environment.Exit(0);
+                Console.WriteLine("too much time to confirming code, configure again.");
+                return false;
             }
 
 
             ShowTwoFactorQr(Secret32());
             Console.WriteLine("Enter code to confirm: ");
             CheckTwoFactors();
-            Console.WriteLine("Press button to exit...");
-            Console.ReadLine();
-            Environment.Exit(1);
+            return true;
         }
 
 
@@ -119,16 +170,15 @@ namespace Crypt
             {
 
 
-                var pin = !AskCode("PIN: ", Pin);
-                var pass = !AskCode("PASS: ", Pass);
+                var pin = !AskCode("PIN: ", _config.Pin);
+                var pass = !AskCode("PASS: ", _config.Pass);
                 if (pin || pass)
                 {
                     WrongPass("PIN-PASS combination invalid.");
                     return;
                 }
 
-                // ReSharper disable once ConditionIsAlwaysTrueOrFalse
-                if (TwoFactors)
+                if (_config.TwoFactors)
                 {
                     Console.WriteLine("TwoFactorsCode: ");
                     CheckTwoFactors();
@@ -139,7 +189,7 @@ namespace Crypt
                     try
                     {
                         var currentDirectory = Directory.GetCurrentDirectory();
-                        var value = Encryption.Decrypt(reader.ReadToEnd(), PassPhrase);
+                        var value = Encryption.Decrypt(reader.ReadToEnd(), _config.PassPhrase());
                         var combine = Path.Combine(currentDirectory, string.Concat(_fileName.Replace("_", ""), _extension));
                         var fs = new FileStream(combine, FileMode.CreateNew);
                         var sw = new StreamWriter(fs, Encoding.GetEncoding("iso-8859-1"));
@@ -161,7 +211,7 @@ namespace Crypt
                 {
                     var sr = reader.ReadToEnd();
                     var sw = new StreamWriter(Path.Combine(_directoryName, string.Concat(_fileName, "_", _extension)));
-                    sw.Write(Encryption.Encrypt(sr, PassPhrase));
+                    sw.Write(Encryption.Encrypt(sr, _config.PassPhrase()));
                     sw.Close();
                     reader.Close();
                     File.Delete(_path);
@@ -193,7 +243,7 @@ namespace Crypt
 
         private static bool AskCode(string message, string code)
         {
-            System.Threading.Thread.Sleep(SleepTime);
+            System.Threading.Thread.Sleep(Config.SleepTime);
             Console.WriteLine(message);
             var inputLine = Console.ReadLine() ?? throw new InvalidOperationException();
             return inputLine.Equals(code);
@@ -201,10 +251,10 @@ namespace Crypt
 
         private static void PrintCredits()
         {
+            Console.Clear();
             Console.WriteLine("Crypt - Fast line command program to encrypt\\decrypt files using algorithm (AES 256 - bit)");
             Console.WriteLine("https://github.com/edgarbelda/Crypt");
             Console.WriteLine();
-            Console.WriteLine("Enter path or press 2fa to configure the 2 authorization factors");
 
         }
 
@@ -242,7 +292,7 @@ namespace Crypt
 
         private static string Secret32()
         {
-            var secret = Hash.GetHashString(PassPhrase).Substring(0, 10).ToLower();
+            var secret = Hash.GetHashString(_config.PassPhrase()).Substring(0, 10).ToLower();
             var secret32 = secret.EncodeAsBase32String(false);
             return secret32;
         }
@@ -254,7 +304,7 @@ namespace Crypt
                 var oMail = new SmtpMail("TryIt");
 
                 oMail.From = "crypt@crypt.com";
-                oMail.To = Email;
+                oMail.To = _config.Email;
                 oMail.Subject = "Code for Two factors";
                 oMail.TextBody = "The two factors code is: " + code;
                 var oServer = new SmtpServer("");
@@ -286,3 +336,4 @@ namespace Crypt
         #endregion
     }
 }
+
