@@ -7,6 +7,7 @@
         public string Pass { get; set; } 
         public const int SleepTime = 1000;
         public bool TwoFactors { get; set; }
+        public bool ConfigureTwoFactors { get; set; }
         public string Email { get; set; }
 
         public Config(string pin, string pass, string email ="")

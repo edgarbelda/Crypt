@@ -78,6 +78,9 @@ namespace Crypt
 
                     if (_config.TwoFactors)
                     {
+                        Console.WriteLine("Configure two factors [Yes/No]: ");
+                        _config.ConfigureTwoFactors = YesOrNot(Console.ReadLine());
+                        if(_config.ConfigureTwoFactors)
                         if (!Configure2Fa())
                         {
                             Console.WriteLine("Press any key to exit...");
@@ -344,6 +347,11 @@ namespace Crypt
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
             return new string(Enumerable.Repeat(chars, length)
                 .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+        private static bool YesOrNot(string word)
+        {
+            var upperWord = word.ToUpper();
+            return upperWord.StartsWith("S") || upperWord.StartsWith("Y");
         }
 
         #endregion
